@@ -8,6 +8,7 @@ import com.pluralsight.order.util.OrderStatus;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * DAO to insert an order
@@ -46,34 +47,33 @@ public class InsertOrderDao {
             ps.executeUpdate();
 
 
-
-
             try (ResultSet result = null) {
                 if(result != null) {
                     if(!result.next()){
-                        database.getConnection();
+                        con.rollback();
                     } else {
 
-                        try(ResultSet resultSet = ps.getGeneratedKeys();) {
+                        orderId = result.getLong(1);
 
-                            if (result.next()){
-                                orderId = resultSet.getInt(1);
-                            }
-                        }
                         for (OrderDetailDto orderDetailDto : orderDto.getOrderDetail()) {
                             orderDetailDto.setOrderId(orderId);
 
                             try (PreparedStatement detailsPS =
                                          createOrderDetailPreparedStatement(con, orderDetailDto)) {
-                                detailsPS.executeUpdate();
+                                int count = detailsPS.executeUpdate();
+
+                                if (count !=1){
+                                    con.rollback();
+                                    orderId = -1;
+                                }
 
                             }
                         }
-                        con.setAutoCommit(true);
+                        con.commit();
                     }
                 }
             } catch(SQLException ex) {
-
+                con.rollback();
                 ExceptionHandler.handleException(ex);
             }
         } catch (SQLException ex) {
@@ -94,7 +94,7 @@ public class InsertOrderDao {
 
         PreparedStatement ps = con.prepareStatement(sqlOrder,Statement.RETURN_GENERATED_KEYS);
         ps.setLong(1,orderDto.getCustomerId());
-        ps.setDate(2, Date.valueOf(LocalDate.now()));
+        ps.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
         ps.setString(3, OrderStatus.CREATED.getStatus());
         return ps;
     }
