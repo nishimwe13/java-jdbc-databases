@@ -5,7 +5,10 @@ import com.pluralsight.order.util.Database;
 import com.pluralsight.order.util.ExceptionHandler;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * DAO to get the total of all the paid orders of a customer
@@ -16,6 +19,7 @@ public class TotalOrderDao {
 
     /**
      * Constructor
+     *
      * @param database Database object
      */
     public TotalOrderDao(Database database) {
@@ -24,6 +28,7 @@ public class TotalOrderDao {
 
     /**
      * Gets the total of all paid orders of a customer
+     *
      * @param paramsDto Object with the arguments of the operation
      * @return Total of all paid orders
      */
@@ -34,13 +39,13 @@ public class TotalOrderDao {
              CallableStatement cs = createCallableStatement(con, paramsDto.getCustomerId())
         ) {
             cs.execute();
-            cs.getResultSet();
-            /*
-            if (cs.getResultSet() != null){
-                while ((cs.getResultSet()).next()){
-                    result =cs.getResultSet().getBigDecimal(1);
+            try (ResultSet resultSet = cs.getResultSet()) {
+                if (resultSet != null && resultSet.next()) {
+
+                    result = resultSet.getBigDecimal(1);
+
                 }
-            }*/
+            }
         } catch (SQLException ex) {
             ExceptionHandler.handleException(ex);
         }
@@ -50,7 +55,8 @@ public class TotalOrderDao {
 
     /**
      * Creates a CallableStatement object to get the total of the orders
-     * @param con Connnection object
+     *
+     * @param con        Connnection object
      * @param customerId ID of the customer to set on the PreparedStatement
      * @return A PreparedStatement object
      * @throws SQLException In case of an error
@@ -58,7 +64,7 @@ public class TotalOrderDao {
     private CallableStatement createCallableStatement(Connection con, long customerId) throws SQLException {
 
         CallableStatement callableStatement = con.prepareCall(query);
-        callableStatement.setLong(1,customerId);
+        callableStatement.setLong(1, customerId);
         return callableStatement;
     }
 }
