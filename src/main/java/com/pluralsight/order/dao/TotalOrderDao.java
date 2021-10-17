@@ -30,10 +30,16 @@ public class TotalOrderDao {
     public BigDecimal getTotalAllPaidOrders(ParamsDto paramsDto) {
         BigDecimal result = null;
 
-        try (Connection con = null;
+        try (Connection con = database.getConnection();
              CallableStatement cs = createCallableStatement(con, paramsDto.getCustomerId())
         ) {
-
+            cs.execute();
+            cs.getResultSet();
+            if (cs.getResultSet() != null){
+                while ((cs.getResultSet()).next()){
+                    result =cs.getResultSet().getBigDecimal(1);
+                }
+            }
         } catch (SQLException ex) {
             ExceptionHandler.handleException(ex);
         }
@@ -50,6 +56,8 @@ public class TotalOrderDao {
      */
     private CallableStatement createCallableStatement(Connection con, long customerId) throws SQLException {
 
-        return null;
+        CallableStatement callableStatement = con.prepareCall(query);
+        callableStatement.setLong(1,customerId);
+        return callableStatement;
     }
 }
